@@ -130,11 +130,9 @@ public final class FhirResolver {
 
             if (bundle.getEntry().isEmpty()) {
                 Logger.error("CodeSystem {} version {} was not found.", system, version);
-                
-                throw new ResourceNotFoundException(
-                    "CodeSystem " + system + " version " + version + " was not found.");
+                throw new ResourceNotFoundException("CodeSystem " + system + " version " + version + " was not found.");
             }
-        } catch(FhirClientConnectionException e) {
+        } catch (FhirClientConnectionException e) {
             ServerAvailability.markFhirTsUnavailable();
             Logger.error("Could not connect to FHIR Terminology Server", e);
             return null;
@@ -201,10 +199,9 @@ public final class FhirResolver {
             if (bundle.getEntry().isEmpty()) {
                 Logger.error("CodeSystem {} version {} was not found.", system, version);
                 
-                throw new ResourceNotFoundException(
-                    "CodeSystem " + system + " version " + version + " was not found.");
+                throw new ResourceNotFoundException("CodeSystem " + system + " version " + version + " was not found.");
             }
-        } catch(FhirClientConnectionException e) {
+        } catch (FhirClientConnectionException e) {
             ServerAvailability.markFhirTsUnavailable();
             Logger.error("Could not connect to FHIR Terminology Server", e);
             return null;
