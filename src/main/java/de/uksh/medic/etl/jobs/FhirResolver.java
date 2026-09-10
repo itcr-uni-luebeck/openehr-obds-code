@@ -97,7 +97,6 @@ public final class FhirResolver {
             ServerAvailability.markFhirTsUnavailable();
             Logger.error("Could not connect to FHIR Terminology Server", e);
         }
-
         Logger.warn("Could not map code {} from {} to {}", input, source, target);
         return null;
     }
@@ -166,7 +165,6 @@ public final class FhirResolver {
         } catch (ResourceNotFoundException e) {
             Logger.warn("Code " + code + " was not found in CodeSystem " + system + ".", e);
         }
-
         return null;
     }
 
@@ -198,7 +196,6 @@ public final class FhirResolver {
 
             if (bundle.getEntry().isEmpty()) {
                 Logger.error("CodeSystem {} version {} was not found.", system, version);
-                
                 throw new ResourceNotFoundException("CodeSystem " + system + " version " + version + " was not found.");
             }
         } catch (FhirClientConnectionException e) {
