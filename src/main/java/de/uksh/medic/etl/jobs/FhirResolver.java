@@ -84,8 +84,8 @@ public final class FhirResolver {
                     if (c.getValue() instanceof Coding) {
                         coding = (Coding) c.getValue();
                     }
-                    if (c.getValue() instanceof StringType && c.getName().equals("source")) {
-                        str = ((StringType) c.getValue()).getValue();
+                    if (c.getValue() instanceof UriType && c.getName().equals("source")) {
+                        str = ((UriType) c.getValue()).getValue();
                     }
                 }
                 if (str != null && str.equals(conceptMapUri.toString())) {
@@ -119,6 +119,27 @@ public final class FhirResolver {
         params.addParameter("system", new UriType(system));
         params.addParameter("code", code);
         params.addParameter("version", version);
+
+        try {
+            Bundle bundle = terminologyClient.search()
+                    .forResource(CodeSystem.class)
+                    .where(CodeSystem.URL.matches().value(system.toString()))
+                    .and(CodeSystem.VERSION.exactly().code(version))
+                    .returnBundle(Bundle.class)
+                    .execute();
+
+            if (bundle.getEntry().isEmpty()) {
+                Logger.error("CodeSystem {} version {} was not found.", system, version);
+                
+                throw new ResourceNotFoundException(
+                    "CodeSystem " + system + " version " + version + " was not found.");
+            }
+        } catch(FhirClientConnectionException e) {
+            ServerAvailability.markFhirTsUnavailable();
+            Logger.error("Could not connect to FHIR Terminology Server", e);
+            return null;
+        }
+
         try {
             Parameters result = terminologyClient.operation().onType(CodeSystem.class)
                     .named("lookup").withParameters(params).useHttpGet().execute();
@@ -145,7 +166,7 @@ public final class FhirResolver {
             ServerAvailability.markFhirTsUnavailable();
             Logger.error("Could not connect to FHIR Terminology Server", e);
         } catch (ResourceNotFoundException e) {
-            Logger.error("Could not look up because system was not found.");
+            Logger.warn("Code " + code + " was not found in CodeSystem " + system + ".", e);
         }
 
         return null;
@@ -168,6 +189,27 @@ public final class FhirResolver {
         params.addParameter("system", new UriType(system));
         params.addParameter("code", code);
         params.addParameter("version", version);
+
+        try {
+            Bundle bundle = terminologyClient.search()
+                    .forResource(CodeSystem.class)
+                    .where(CodeSystem.URL.matches().value(system.toString()))
+                    .and(CodeSystem.VERSION.exactly().code(version))
+                    .returnBundle(Bundle.class)
+                    .execute();
+
+            if (bundle.getEntry().isEmpty()) {
+                Logger.error("CodeSystem {} version {} was not found.", system, version);
+                
+                throw new ResourceNotFoundException(
+                    "CodeSystem " + system + " version " + version + " was not found.");
+            }
+        } catch(FhirClientConnectionException e) {
+            ServerAvailability.markFhirTsUnavailable();
+            Logger.error("Could not connect to FHIR Terminology Server", e);
+            return null;
+        }
+
         try {
             Parameters result = terminologyClient.operation().onType(CodeSystem.class)
                     .named("lookup").withParameters(params).useHttpGet().execute();
@@ -216,7 +258,7 @@ public final class FhirResolver {
             ServerAvailability.markFhirTsUnavailable();
             Logger.error("Could not connect to FHIR Terminology Server", e);
         } catch (ResourceNotFoundException e) {
-            Logger.error("Could not look up because system was not found.");
+            Logger.warn("Code " + code + " was not found in CodeSystem " + system + ".", e);
         }
 
         return null;

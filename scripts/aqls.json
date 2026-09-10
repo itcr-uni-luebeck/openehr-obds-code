@@ -1,4 +1,44 @@
 {
+    "Koerpergroesse_UKSH": {
+        "system": null,
+        "source": null,
+        "target": null,
+        "conceptMap": null,
+        "id": null,
+        "code": null,
+        "version": null,
+        "unit": null,
+        "updateAql": "SELECT e/ehr_id/value AS ehr_id, c/uid/value AS uid_based_id FROM EHR e CONTAINS VERSION v CONTAINS COMPOSITION c WHERE c/archetype_details/template_id/value = '%s' AND c/feeder_audit/originating_system_audit/system_id = '%s' AND c/feeder_audit/originating_system_item_ids/id  = '%s' ORDER BY v/commit_audit/time_committed/value DESC",
+        "deleteAql": "SELECT e/ehr_id/value AS ehr_id, c/uid/value AS uid_based_id FROM EHR e CONTAINS VERSION v CONTAINS COMPOSITION c WHERE c/archetype_details/template_id/value = '%s' AND c/feeder_audit/originating_system_audit/system_id = '%s' AND c/feeder_audit/originating_system_item_ids/id  = '%s' ORDER BY v/commit_audit/time_committed/value DESC",
+        "datatype": null
+    },
+
+    "Koerpergroesse": {
+        "system": null,
+        "source": null,
+        "target": null,
+        "conceptMap": null,
+        "id": null,
+        "code": null,
+        "version": null,
+        "unit": null,
+        "updateAql": "SELECT e/ehr_id/value AS ehr_id, c/uid/value AS uid_based_id FROM EHR e CONTAINS VERSION v CONTAINS COMPOSITION c WHERE c/archetype_details/template_id/value = '%s' AND c/feeder_audit/originating_system_audit/system_id = '%s' AND c/feeder_audit/originating_system_item_ids/id  = '%s' ORDER BY v/commit_audit/time_committed/value DESC",
+        "deleteAql": "SELECT e/ehr_id/value AS ehr_id, c/uid/value AS uid_based_id FROM EHR e CONTAINS VERSION v CONTAINS COMPOSITION c WHERE c/archetype_details/template_id/value = '%s' AND c/feeder_audit/originating_system_audit/system_id = '%s' AND c/feeder_audit/originating_system_item_ids/id  = '%s' ORDER BY v/commit_audit/time_committed/value DESC",
+        "datatype": null
+    },
+    "KDS_Medikamentenverabreichungen_UKSH": {
+        "system": null,
+        "source": null,
+        "target": null,
+        "conceptMap": null,
+        "id": null,
+        "code": null,
+        "version": null,
+        "unit": null,
+        "updateAql": "SELECT e/ehr_id/value AS ehr_id, c/uid/value AS uid_based_id FROM EHR e CONTAINS VERSION v CONTAINS COMPOSITION c WHERE c/archetype_details/template_id/value = '%s' AND c/feeder_audit/originating_system_audit/system_id = '%s' AND c/context/other_context/items[at0002]/value/value = '%s' ORDER BY v/commit_audit/time_committed/value DESC",
+        "deleteAql": "SELECT e/ehr_id/value AS ehr_id, c/uid/value AS uid_based_id FROM EHR e CONTAINS COMPOSITION c WHERE c/archetype_details/template_id/value = '%s' AND c/feeder_audit/originating_system_audit/system_id = '%s' AND c/context/other_context/items[at0002]/value/value = '%s'",
+        "datatype": null
+    },
     "KDS_Diagnose": {
         "system": null,
         "source": null,
@@ -52,6 +92,19 @@
         "datatype": null
     },
     "Körpertemperatur_UKSH": {
+        "system": null,
+        "source": null,
+        "target": null,
+        "conceptMap": null,
+        "id": null,
+        "code": null,
+        "version": null,
+        "unit": null,
+        "updateAql": "SELECT e/ehr_id/value AS ehr_id, c/uid/value AS uid_based_id FROM EHR e CONTAINS COMPOSITION c WHERE c/archetype_details/template_id/value = '%s' AND c/feeder_audit/originating_system_audit/system_id = '%s' AND c/feeder_audit/originating_system_item_ids/id = '%s'",
+        "deleteAql": "SELECT e/ehr_id/value AS ehr_id, c/uid/value AS uid_based_id FROM EHR e CONTAINS COMPOSITION c WHERE c/archetype_details/template_id/value = '%s' AND c/feeder_audit/originating_system_audit/system_id = '%s' AND c/feeder_audit/originating_system_item_ids/id = '%s'",
+        "datatype": null
+    },
+    "Körpergewicht_UKSH": {
         "system": null,
         "source": null,
         "target": null,
