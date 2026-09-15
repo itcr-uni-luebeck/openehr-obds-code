@@ -65,6 +65,7 @@ public final class FhirResolver {
 
     public Coding conceptMapServer(URI conceptMapUri, URI system, URI source, URI target, String input) {
         Parameters params = new Parameters();
+        params.addParameter("url", new UriType(conceptMapUri));
         params.addParameter("system", new UriType(system));
         params.addParameter("source", new UriType(source));
         params.addParameter("target", new UriType(target));
@@ -78,18 +79,10 @@ public final class FhirResolver {
                 if (!p.getName().equals("match")) {
                     continue;
                 }
-                Coding coding = null;
-                String str = null;
                 for (ParametersParameterComponent c : p.getPart()) {
                     if (c.getValue() instanceof Coding) {
-                        coding = (Coding) c.getValue();
+                        return (Coding) c.getValue();
                     }
-                    if (c.getValue() instanceof UriType && c.getName().equals("source")) {
-                        str = ((UriType) c.getValue()).getValue();
-                    }
-                }
-                if (str != null && str.equals(conceptMapUri.toString())) {
-                    return coding;
                 }
             }
 
