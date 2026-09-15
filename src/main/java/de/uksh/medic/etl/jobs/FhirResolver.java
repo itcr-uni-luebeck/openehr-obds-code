@@ -26,6 +26,10 @@ public final class FhirResolver {
             .expireAfterAccess(24, TimeUnit.HOURS).maximumSize(CACHESIZE).build();
     private static final Cache<String, Coding> CACHE_CONCEPTMAP = Caffeine.newBuilder()
             .expireAfterAccess(24, TimeUnit.HOURS).maximumSize(CACHESIZE).build();
+    private static final Cache<String, Boolean> CACHE_CODESYSTEM = Caffeine.newBuilder()
+            .expireAfterAccess(24, TimeUnit.HOURS).maximumSize(CACHESIZE).build();
+    private static final Cache<String, Boolean> CACHE_CONCEPTMAPFOUND = Caffeine.newBuilder()
+            .expireAfterAccess(24, TimeUnit.HOURS).maximumSize(CACHESIZE).build();
     private static IGenericClient terminologyClient;
 
     /**
@@ -51,6 +55,13 @@ public final class FhirResolver {
     }
 
     public Coding conceptMap(URI conceptMapUri, URI system, URI source, URI target, String input) {
+        String conceptMapKey = conceptMapUri.toString();
+        Boolean conceptMapNotFound = CACHE_CONCEPTMAPFOUND.getIfPresent(conceptMapKey);
+        if (Boolean.TRUE.equals(conceptMapNotFound)) {
+            Logger.warn("ConceptMap {} was not found.", conceptMapUri);
+            return null;
+        }
+        
         String key = String.join("|", conceptMapUri.toString(), system.toString(), source.toString(), target.toString(),
                 input);
         Coding c = CACHE_CONCEPTMAP.getIfPresent(key);
@@ -64,11 +75,31 @@ public final class FhirResolver {
     }
 
     public Coding conceptMapServer(URI conceptMapUri, URI system, URI source, URI target, String input) {
+        String conceptMapKey = conceptMapUri.toString();
         Parameters params = new Parameters();
         params.addParameter("system", new UriType(system));
         params.addParameter("source", new UriType(source));
         params.addParameter("target", new UriType(target));
         params.addParameter("code", new CodeType(input));
+
+        try {
+        Bundle bundle = terminologyClient.search()
+                .forResource(ConceptMap.class)
+                .where(ConceptMap.URL.matches().value(conceptMapUri.toString()))
+                .returnBundle(Bundle.class)
+                .execute();
+
+        if (bundle.getEntry().isEmpty()) {
+            CACHE_CONCEPTMAPFOUND.put(conceptMapKey, Boolean.TRUE);
+            Logger.warn("ConceptMap {} was not found.", conceptMapUri);
+            return null;
+        }
+        } catch (FhirClientConnectionException e) {
+            ServerAvailability.markFhirTsUnavailable();
+            Logger.error("Could not connect to FHIR Terminology Server", e);
+            return null;
+        }
+
         try {
             Parameters result = terminologyClient.operation()
                     .onType("ConceptMap")
@@ -102,6 +133,12 @@ public final class FhirResolver {
     }
 
     public Coding lookUp(URI system, String version, String code) {
+        String codeSystemKey = String.join("|", system.toString(), version);
+        Boolean codeSystemNotFound = CACHE_CODESYSTEM.getIfPresent(codeSystemKey);
+        if (Boolean.TRUE.equals(codeSystemNotFound)) {
+            throw new ResourceNotFoundException("CodeSystem " + system + " version " + version + " was not found.");
+        }
+
         String key = String.join("|", system.toString(), version, code);
         Coding c = CACHE_LOOKUP.getIfPresent(key);
         if (c == null) {
@@ -110,27 +147,38 @@ public final class FhirResolver {
                 CACHE_LOOKUP.put(key, c);
             }
         }
-        return c;
-    }
 
+        return c;
+    }    
+    
     public Coding lookUpServer(URI system, String version, String code) {
+        String codeSystemKey = String.join("|", system.toString(), version);
         Parameters params = new Parameters();
         params.addParameter("system", new UriType(system));
         params.addParameter("code", code);
         params.addParameter("version", version);
 
         try {
-            Bundle bundle = terminologyClient.search()
-                    .forResource(CodeSystem.class)
-                    .where(CodeSystem.URL.matches().value(system.toString()))
-                    .and(CodeSystem.VERSION.exactly().code(version))
-                    .returnBundle(Bundle.class)
-                    .execute();
+            Bundle bundle;
+            if (version != null) {
+                bundle = terminologyClient.search()
+                        .forResource(CodeSystem.class)
+                        .where(CodeSystem.URL.matches().value(system.toString()))
+                        .and(CodeSystem.VERSION.exactly().code(version))
+                        .returnBundle(Bundle.class)
+                        .execute();
+            } else {
+                bundle = terminologyClient.search()
+                        .forResource(CodeSystem.class)
+                        .where(CodeSystem.URL.matches().value(system.toString()))
+                        .returnBundle(Bundle.class)
+                        .execute();
+            }
 
             if (bundle.getEntry().isEmpty()) {
-                Logger.error("CodeSystem {} version {} was not found.", system, version);
+                CACHE_CODESYSTEM.put(codeSystemKey, Boolean.TRUE);
                 throw new ResourceNotFoundException("CodeSystem " + system + " version " + version + " was not found.");
-            }
+            } 
         } catch (FhirClientConnectionException e) {
             ServerAvailability.markFhirTsUnavailable();
             Logger.error("Could not connect to FHIR Terminology Server", e);
@@ -163,12 +211,19 @@ public final class FhirResolver {
             ServerAvailability.markFhirTsUnavailable();
             Logger.error("Could not connect to FHIR Terminology Server", e);
         } catch (ResourceNotFoundException e) {
-            Logger.warn("Code " + code + " was not found in CodeSystem " + system + ".", e);
+            Logger.warn("Code " + code + " was not found.", e);
         }
         return null;
     }
 
     public Coding lookUpDesignation(URI system, String version, String code, String designation) {
+
+        String codeSystemKey = String.join("|", system.toString(), version);
+        Boolean codeSystemNotFound = CACHE_CODESYSTEM.getIfPresent(codeSystemKey);
+        if (Boolean.TRUE.equals(codeSystemNotFound)) {
+            throw new ResourceNotFoundException("CodeSystem " + system + " version " + version + " was not found.");
+        }
+
         String key = String.join("|", system.toString(), version, code, designation);
         Coding c = CACHE_LOOKUP.getIfPresent(key);
         if (c == null) {
@@ -177,27 +232,38 @@ public final class FhirResolver {
                 CACHE_LOOKUP.put(key, c);
             }
         }
+
         return c;
-    }
+    }    
 
     public Coding lookUpServerDesignation(URI system, String version, String code, String designation) {
+        String codeSystemKey = String.join("|", system.toString(), version);
         Parameters params = new Parameters();
         params.addParameter("system", new UriType(system));
         params.addParameter("code", code);
         params.addParameter("version", version);
 
         try {
-            Bundle bundle = terminologyClient.search()
-                    .forResource(CodeSystem.class)
-                    .where(CodeSystem.URL.matches().value(system.toString()))
-                    .and(CodeSystem.VERSION.exactly().code(version))
-                    .returnBundle(Bundle.class)
-                    .execute();
+            Bundle bundle;
+            if (version != null) {
+                bundle = terminologyClient.search()
+                        .forResource(CodeSystem.class)
+                        .where(CodeSystem.URL.matches().value(system.toString()))
+                        .and(CodeSystem.VERSION.exactly().code(version))
+                        .returnBundle(Bundle.class)
+                        .execute();
+            } else {
+                bundle = terminologyClient.search()
+                        .forResource(CodeSystem.class)
+                        .where(CodeSystem.URL.matches().value(system.toString()))
+                        .returnBundle(Bundle.class)
+                        .execute();
+            }
 
             if (bundle.getEntry().isEmpty()) {
-                Logger.error("CodeSystem {} version {} was not found.", system, version);
+                CACHE_CODESYSTEM.put(codeSystemKey, Boolean.TRUE);
                 throw new ResourceNotFoundException("CodeSystem " + system + " version " + version + " was not found.");
-            }
+            } 
         } catch (FhirClientConnectionException e) {
             ServerAvailability.markFhirTsUnavailable();
             Logger.error("Could not connect to FHIR Terminology Server", e);
@@ -252,7 +318,7 @@ public final class FhirResolver {
             ServerAvailability.markFhirTsUnavailable();
             Logger.error("Could not connect to FHIR Terminology Server", e);
         } catch (ResourceNotFoundException e) {
-            Logger.warn("Code " + code + " was not found in CodeSystem " + system + ".", e);
+            Logger.warn("Code " + code + " was not found.", e);
         }
 
         return null;
